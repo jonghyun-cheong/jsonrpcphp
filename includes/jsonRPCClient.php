@@ -133,7 +133,8 @@ class jsonRPCClient {
       )
     );
     $context = stream_context_create($opts);
-    if ($fp = fopen($this->url, 'r', FALSE, $context)) {
+    // the @ is required to suppress any errors that could be used by an attacker to learn more about your system
+    if ($fp = @fopen($this->url, 'r', FALSE, $context)) {
       $response = '';
       while ($row = fgets($fp)) {
         $response .= trim($row) . "\n";
@@ -153,15 +154,21 @@ class jsonRPCClient {
     // final checks and return
     if (!$this->notification) {
       // check
-      if ($response['id'] != $currentId) {
-        throw new Exception('Incorrect response id (request id: ' . $currentId . ', response id: ' . $response['id'] . ')');
+      if (!empty($response['id'])) {
+        if ($response['id'] != $currentId) {
+          throw new Exception('Incorrect response id (request id: ' . $currentId . ', response id: ' . $response['id'] . ')');
+        }
       }
-      if (!is_null($response['error'])) {
-        throw new Exception('Request error: ' . $response['error']);
+
+      if (!empty($response['error'])) {
+        if(!empty($response['error']['message'])) {
+          throw new Exception('Request error: ' . $response['error']['message'], $response['error']['code']);
+        } else {
+          throw new Exception('Request error', $response['error']['code']);
+        }
       }
 
       return $response['result'];
-
     }
     else {
       return TRUE;
