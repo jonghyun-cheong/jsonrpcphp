@@ -27,153 +27,176 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * @author sergio <jsonrpcphp@inservibile.org>
  */
-class jsonRPCClient {
+class jsonRPCClient
+{
 
-  /**
-   * Debug state
-   *
-   * @var boolean
-   */
-  private $debug;
+    /**
+     * Debug state
+     *
+     * @var boolean
+     */
+    private $debug;
 
-  /**
-   * The server URL
-   *
-   * @var string
-   */
-  private $url;
-  /**
-   * The request id
-   *
-   * @var integer
-   */
-  private $id;
-  /**
-   * If true, notifications are performed instead of requests
-   *
-   * @var boolean
-   */
-  private $notification = FALSE;
+    /**
+     * The server URL
+     *
+     * @var string
+     */
+    private $url;
+    /**
+     * The request id
+     *
+     * @var integer
+     */
+    private $id;
+    /**
+     * If true, notifications are performed instead of requests
+     *
+     * @var boolean
+     */
+    private $notification = FALSE;
 
-  /**
-   * Takes the connection parameters
-   *
-   * @param string $url
-   * @param boolean $debug
-   */
-  public function __construct($url, $debug = FALSE) {
-    // server URL
-    $this->url = $url;
-    // proxy
-    empty($proxy) ? $this->proxy = '' : $this->proxy = $proxy;
-    // debug state
-    empty($debug) ? $this->debug = FALSE : $this->debug = TRUE;
-    // message id
-    $this->id = 1;
-  }
-
-  /**
-   * Sets the notification state of the object. In this state, notifications are performed, instead of requests.
-   *
-   * @param boolean $notification
-   */
-  public function setRPCNotification($notification) {
-    empty($notification) ?
-      $this->notification = FALSE
-      :
-      $this->notification = TRUE;
-  }
-
-  /**
-   * Performs a jsonRCP request and gets the results as an array
-   *
-   * @param string $method
-   * @param array $params
-   * @return array
-   */
-  public function __call($method, $params) {
-
-    // check
-    if (!is_scalar($method)) {
-      throw new Exception('Method name has no scalar value');
+    /**
+     * Takes the connection parameters
+     *
+     * @param string $url
+     * @param boolean $debug
+     */
+    public function __construct($url, $debug = FALSE)
+    {
+        // server URL
+        $this->url = $url;
+        // proxy
+        empty($proxy) ? $this->proxy = '' : $this->proxy = $proxy;
+        // debug state
+        empty($debug) ? $this->debug = FALSE : $this->debug = TRUE;
+        // message id
+        $this->id = 1;
     }
 
-    // check
-    if (is_array($params)) {
-      // no keys
-      $params = array_values($params);
-    }
-    else {
-      throw new Exception('Params must be given as array');
-    }
-
-    // sets notification or request task
-    if ($this->notification) {
-      $currentId = NULL;
-    }
-    else {
-      $currentId = $this->id;
+    /**
+     * Sets the notification state of the object. In this state, notifications are performed, instead of requests.
+     *
+     * @param boolean $notification
+     */
+    public function setRPCNotification($notification)
+    {
+        empty($notification) ?
+            $this->notification = FALSE
+            :
+            $this->notification = TRUE;
     }
 
-    // prepares the request
-    $request = array(
-      'method' => $method,
-      'params' => $params,
-      'id' => $currentId
-    );
-    $request = json_encode($request);
-    $this->debug && $this->debug .= '***** Request *****' . "\n" . $request . "\n" . '***** End Of request *****' . "\n\n";
+    /**
+     * Performs a jsonRCP request and gets the results as an array
+     *
+     * @param string $method
+     * @param array $params
+     * @return array
+     */
+    public function __call($method, $params)
+    {
 
-    // performs the HTTP POST
-    $opts = array(
-      'http' => array(
-        'method' => 'POST',
-        'header' => 'Content-type: application/json',
-        'content' => $request
-      )
-    );
-    $context = stream_context_create($opts);
-    // the @ is required to suppress any errors that could be used by an attacker to learn more about your system
-    if ($fp = @fopen($this->url, 'r', FALSE, $context)) {
-      $response = '';
-      while ($row = fgets($fp)) {
-        $response .= trim($row) . "\n";
-      }
-      $this->debug && $this->debug .= '***** Server response *****' . "\n" . $response . '***** End of server response *****' . "\n";
-      $response = json_decode($response, TRUE);
-    }
-    else {
-      throw new Exception('Unable to connect to ' . $this->url);
-    }
-
-    // debug output
-    if ($this->debug) {
-      echo nl2br($debug);
-    }
-
-    // final checks and return
-    if (!$this->notification) {
-      // check
-      if (!empty($response['id'])) {
-        if ($response['id'] != $currentId) {
-          throw new Exception('Incorrect response id (request id: ' . $currentId . ', response id: ' . $response['id'] . ')');
+        // check
+        if (!is_scalar($method)) {
+            throw new Exception('Method name has no scalar value');
         }
-      }
 
-      if (!empty($response['error'])) {
-        if(!empty($response['error']['message'])) {
-          throw new Exception('Request error: ' . $response['error']['message'], $response['error']['code']);
+        // check
+        if (is_array($params)) {
+            // no keys
+            $params = array_values($params);
         } else {
-          throw new Exception('Request error', $response['error']['code']);
+            throw new Exception('Params must be given as array');
         }
-      }
 
-      return $response['result'];
+        // sets notification or request task
+        if ($this->notification) {
+            $currentId = NULL;
+        } else {
+            $currentId = $this->id;
+        }
+
+        $debuglog = '';
+        // prepares the request
+        $request = array(
+            'method' => $method,
+            'params' => $params,
+            'id' => $currentId
+        );
+        $request = json_encode($request);
+//    $this->debug && $this->debug .= '***** Request *****' . "\n" . $request . "\n" . '***** End Of request *****' . "\n\n";
+        $debuglog .= '***** Request *****' . "\n" . $request . "\n" . '***** End Of request *****' . "\n";
+
+        // performs the HTTP POST
+        $opts = array(
+            'http' => array(
+                'method' => 'POST',
+                'header' => 'Content-type: application/json',
+                'content' => $request
+            )
+        );
+        $context = stream_context_create($opts);
+        // the @ is required to suppress any errors that could be used by an attacker to learn more about your system
+        /*
+        if ($fp = @fopen($this->url, 'r', FALSE, $context)) {
+            $response = '';
+            while ($row = fgets($fp)) {
+                $response .= trim($row) . "\n";
+            }
+            $this->debug && $this->debug .= '***** Server response *****' . "\n" . $response . '***** End of server response *****' . "\n";
+            $response = json_decode($response, TRUE);
+        } else {
+            throw new Exception('Unable to connect to ' . $this->url);
+        }
+        */
+        try {
+            $fp = fopen($this->url, 'r', FALSE, $context);
+            $response = '';
+            while ($row = fgets($fp)) {
+                $response .= trim($row) . "\n";
+            }
+
+//            $this->debug && $this->debug .= '***** Server response *****' . "\n" . $response . '***** End of server response *****' . "\n";
+            $debuglog .= '***** Server response *****' . "\n" . $response . '***** End of server response *****' . "\n";
+            $response = json_decode($response, TRUE);
+        } catch (Exception $ex) {
+            throw new Exception('Unable to connect to Server');
+        }
+
+        // debug output
+        if ($this->debug) {
+//            echo nl2br($debug);
+            $log = new Logging();
+            $log->lfile('../common/Debug/jsonRPCClient' . date('Ymd', time()) . '.txt');
+            $log->lwrite(__CLASS__ . ":" . $debuglog . ' ' . $_SERVER['REMOTE_ADDR']);
+            $log->lclose();
+        }
+
+        // final checks and return
+        if (!$this->notification) {
+            // check
+//            if (!empty($response['id'])) {
+            if ($response['id'] != $currentId) {
+                throw new Exception('Incorrect response id (request id: ' . $currentId . ', response id: ' . $response['id'] . ')');
+            }
+//            }
+
+            if (!empty($response['error'])) {
+                echo json_encode($response['error']);
+                if (!empty($response['error']['message'])) {
+                    throw new Exception('Request error: ' . $response['error']['message'], $response['error']['code']);
+                } else {
+                    throw new Exception('Request error', $response['error']['code']);
+                }
+            }
+
+//            return $response['result'];
+            return (isset($response['result'])?$response['result']:NULL);
+        } else {
+            return TRUE;
+        }
     }
-    else {
-      return TRUE;
-    }
-  }
 }
 
 ?>
